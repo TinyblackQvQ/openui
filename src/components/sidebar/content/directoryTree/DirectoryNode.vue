@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div @contextmenu.prevent="onMenuOpenup">
     <div v-if="props.handler?.kind == 'directory'">
       <div class="directory-node" v-on:click="onDirectoryLeftClick">
         <div :class="['directory-name', props.isTopDirectory ? 'directory-name-top' : '']">
@@ -42,6 +42,12 @@
         <span>Unknown Node</span>
       </div>
     </div>
+    <ContextMenu
+      :is-menu-showup="isMenuShowup"
+      :menu-items="menuItems"
+      :menu-position="menuPosition"
+      v-on:close-menu="isMenuShowup = false"
+    />
   </div>
 </template>
 <script setup lang="ts">
@@ -49,6 +55,8 @@ import { ref } from 'vue'
 import { Down } from '@icon-park/vue-next'
 import TextEditerFileHandler from '@/components/content/text_editer/textEditerFileHandler'
 import ImageViewerFileHandler from '@/components/content/image_viewer/imageViewerFileHandler'
+import ContextMenu from '@/components/menu/ContextMenu.vue'
+import type { ContextMenuItem } from '@/components/menu/ContextMenuItem'
 
 interface DirectoryNodeProps {
   handler: FileSystemHandle
@@ -73,16 +81,48 @@ const isDirectoryFolded = ref(true)
 const subDirectoryHeight = ref(0)
 const thisPlaceholder = ref(1)
 
+const menuItems: Array<ContextMenuItem> = [
+  { label: '设为输出文件夹', onClick: () => {} },
+  {
+    label: '打开文件',
+    onClick: () => {
+      emits('onOpenFile', props.handler as FileSystemFileHandle)
+    },
+  },
+  { label: '重命名', onClick: () => {} },
+  { label: '删除', onClick: () => {} },
+  { label: '新建文件夹', onClick: () => {} },
+  { label: '新建文件', onClick: () => {} },
+  { label: '复制', onClick: () => {} },
+  { label: '粘贴', onClick: () => {} },
+  { label: '剪切', onClick: () => {} },
+]
+const isMenuShowup = ref(false)
+const menuPosition = ref({ x: 0, y: 0 })
+
+const onMenuOpenup = (event: MouseEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+  isMenuShowup.value = true
+  menuPosition.value = { x: event.clientX, y: event.clientY }
+}
+
+// 点击文件节点时触发的事件
+// 如果是图片文件，则打开图片查看器
+// 如果是文本文件，则打开文本编辑器
 const onFileLeftClick = (event: MouseEvent) => {
   event.preventDefault()
   event.stopPropagation()
   const fileHandle = props.handler as FileSystemFileHandle
   fileHandle.getFile().then((file) => {
-    if (file.type.includes('image')) ImageViewerFileHandler.open(props.handler as FileSystemFileHandle)
+    if (file.type.includes('image'))
+      ImageViewerFileHandler.open(props.handler as FileSystemFileHandle)
     else TextEditerFileHandler.open(props.handler as FileSystemFileHandle)
   })
 }
 
+// 点击目录节点时触发的事件
+// 如果是目录，则展开或折叠目录
 const onDirectoryLeftClick = async (event: MouseEvent) => {
   event.preventDefault()
   event.stopPropagation()
@@ -102,6 +142,7 @@ const onDirectoryLeftClick = async (event: MouseEvent) => {
   )
 }
 
+// 监听子项的 onOpenDirectory 事件，更新子项的占位符值
 const onOpenDirectory = (handler: FileSystemHandle | undefined, node_count: number) => {
   if (handler == null || handler.kind === 'file') return
   const searchResultHandler = subHandles.value.find((item) => item.handler === handler)
@@ -132,6 +173,9 @@ async function openDirectory() {
   refreshDirectoryHeight()
 }
 
+/**
+ * 刷新目录高度
+ */
 async function refreshDirectoryHeight() {
   let height = 0
   for (const item of subHandles.value) {
@@ -139,7 +183,10 @@ async function refreshDirectoryHeight() {
   }
   subDirectoryHeight.value = height
 }
-
+/**
+ * 刷新占位符值
+ * 用于计算当前目录下的子项数量，包括子目录和文件
+ */
 function refreshPlaceholder() {
   let placeholder = 1
   for (const item of subHandles.value) {

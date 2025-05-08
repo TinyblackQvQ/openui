@@ -13,7 +13,7 @@ class RenderTransformer {
   scaleTo(factor: number): void
   scaleTo(x: number, y: number, z: number): void
   scaleTo(x: number, y?: number, z?: number): void {
-    if (y === undefined && z === undefined) {
+    if (y === undefined || z === undefined) {
       this.scale = new Vector3(x, x, x)
     } else {
       this.scale = new Vector3(x, y, z)

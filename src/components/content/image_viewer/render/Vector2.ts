@@ -1,4 +1,5 @@
 class Vector2 {
+  static zero: Vector2 = new Vector2(0, 0)
   constructor(x: number, y: number) {
     this.x = x
     this.y = y
