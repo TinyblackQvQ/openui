@@ -10,11 +10,31 @@
     <div
       class="context-menu"
       v-show="isMenuShowup"
-      :style="{ left: menuPosition.x, top: menuPosition.y }"
+      :style="{ left: menuPosition.x + 'px', top: menuPosition.y + 'px' }"
       ref="containerRef"
+      @contextmenu.prevent.capture="handleClickOutside"
     >
-      <div class="menu-item" v-for="item in menuItems" :key="item.label" v-on:click="handleItemClick(item)">
+      <div
+        class="menu-item"
+        v-for="item in menuItems"
+        :key="item.label"
+        v-on:click.prevent.stop="handleItemClick(item)"
+        :style="item.style"
+        @mouseenter="showSubmenu(item, $event)"
+        @contextmenu.stop=""
+      >
         {{ item.label }}
+        <span class="arrow" v-if="item.children">▶</span>
+
+        <!-- 新增子菜单 -->
+        <ContextMenu
+          v-if="item.children"
+          :menu-items="item.children"
+          :is-menu-showup="activeSubmenu === item"
+          :menu-position="submenuPosition"
+          :z-index="zIndex + 1"
+          @closeMenu="activeSubmenu = null"
+        />
       </div>
     </div>
   </Transition>
@@ -25,7 +45,7 @@ import { onMounted, onUnmounted, ref, type PropType } from 'vue'
 import type { ContextMenuItem } from './ContextMenuItem'
 
 const containerRef = ref<HTMLDivElement>()
-
+// 定义 prop 和 emits
 const props = defineProps({
   menuItems: Array<ContextMenuItem>,
   isMenuShowup: Boolean,
@@ -33,20 +53,42 @@ const props = defineProps({
     type: Object as PropType<{ x: number; y: number }>,
     default: () => ({ x: 0, y: 0 }),
   },
+  zIndex: {
+    type: Number,
+    default: 9999,
+  },
 })
 
-const emit = defineEmits(['closeMenu'])
+const emits = defineEmits(['closeMenu'])
+
+const activeSubmenu = ref<ContextMenuItem | null>(null)
+const submenuPosition = ref({ x: 0, y: 0 })
+
+const showSubmenu = (item: ContextMenuItem, event: MouseEvent) => {
+  if (!item.children) return
+
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  submenuPosition.value = {
+    x: rect.right + 2,
+    y: rect.top - 8,
+  }
+  activeSubmenu.value = item
+}
 
 const handleClickOutside = (event: MouseEvent) => {
-  if (containerRef.value && !containerRef.value.contains(event.target as Node)) {
-    emit('closeMenu')
+  if (!containerRef.value?.contains(event.target as Node)) {
+    emits('closeMenu')
   }
 }
 
 const handleItemClick = (item: ContextMenuItem) => {
   if (item.onClick == null) return
+  if (item.children != null) {
+    showSubmenu(item, event as MouseEvent)
+    return
+  }
   item.onClick()
-  emit('closeMenu')
+  emits('closeMenu')
 }
 
 onMounted(() => {
@@ -73,11 +115,18 @@ onUnmounted(() => {
 
 /* 菜单项样式 */
 .menu-item {
+  position: relative;
   padding: 8px 16px;
   cursor: pointer;
   transition: background 0.2s;
   font-size: 14px;
   color: #606266;
+}
+
+.arrow {
+  margin-left: 20px;
+  font-size: 12px;
+  color: #999;
 }
 
 .menu-item:hover {

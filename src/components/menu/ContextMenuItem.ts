@@ -1,8 +1,10 @@
+import type { StyleValue } from "vue"
+
 export interface ContextMenuItem {
   label: string
   icon?: string
   onClick?: () => void
-  submenu?: ContextMenuItem[]
-  style?: string
+  style?: StyleValue
   disabled?: boolean
+  children?: ContextMenuItem[]
 }

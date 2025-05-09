@@ -12,7 +12,9 @@
 </template>
 
 <script setup lang="ts">
-
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useStore } from 'vuex'
+import { useRoute } from 'vue-router'
 </script>
 
 <style lang="less" scoped>

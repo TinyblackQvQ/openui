@@ -1,5 +1,5 @@
 <template>
-  <div @contextmenu.prevent="onMenuOpenup">
+  <div @contextmenu.prevent.stop="onMenuOpenup">
     <div v-if="props.handler?.kind == 'directory'">
       <div class="directory-node" v-on:click="onDirectoryLeftClick">
         <div :class="['directory-name', props.isTopDirectory ? 'directory-name-top' : '']">
@@ -82,7 +82,7 @@ const subDirectoryHeight = ref(0)
 const thisPlaceholder = ref(1)
 
 const menuItems: Array<ContextMenuItem> = [
-  { label: '设为输出文件夹', onClick: () => {} },
+  { label: '设为输出文件夹', onClick: () => {}, style: { color: 'var(--color-text-emphisis)' } },
   {
     label: '打开文件',
     onClick: () => {
@@ -101,8 +101,6 @@ const isMenuShowup = ref(false)
 const menuPosition = ref({ x: 0, y: 0 })
 
 const onMenuOpenup = (event: MouseEvent) => {
-  event.preventDefault()
-  event.stopPropagation()
   isMenuShowup.value = true
   menuPosition.value = { x: event.clientX, y: event.clientY }
 }
